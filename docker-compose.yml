@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres-db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: katabasis
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:latest
+    container_name: redis-db
+    restart: always
+    ports:
+      - "6379:6379"
+
+  fastapi:
+    build: .
+    container_name: fastapi-app
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: katabasis
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      AZURE_OPENAI_ENDPOINT: "https://katabasis.openai.azure.com/"
+      AZURE_OPENAI_KEY: "DExjgg4CwU37pYlg1kQwwUw5zzxXfHA8T25nG6MEuUdqJBSJiqs2JQQJ99BCACHYHv6XJ3w3AAABACOGAALO"
+      AZURE_OPENAI_MODEL: "gpt-4"
+      AZURE_OPENAI_API_VERSION: "2024-10-21"
+      SECRET_KEY: "SdFDHyd4RFiBDsNALuCJn4l5kdllr4oB"
+    ports:
+      - "8000:8000"
+
+volumes:
+  pg_data:
