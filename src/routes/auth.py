@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from src.services.auth import get_current_user
 from src.config.database import get_db
 from src.models.user import User
 from src.models.auth import UserLogin, UserSignup
@@ -7,12 +8,14 @@ from src.services.auth import hash_password, verify_password, create_access_toke
 
 router = APIRouter()
 
+
 @router.post("/signup/")
 def signup(user_data: UserSignup, db: Session = Depends(get_db)):
-    existing_user = db.query(User).filter(User.username == user_data.username).first()
+    existing_user = db.query(User).filter(
+        User.username == user_data.username).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Username alreadu exists")
-    
+
     new_user = User(
         username=user_data.username,
         email=user_data.email,
@@ -23,6 +26,7 @@ def signup(user_data: UserSignup, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "User created successfully"}
 
+
 @router.post("/login/")
 def login(user_data: UserLogin, db: Session = Depends(get_db)):
     print(f"Attempting to log in with username: {user_data.username}")
@@ -32,7 +36,7 @@ def login(user_data: UserLogin, db: Session = Depends(get_db)):
     if not user:
         print(f"User {user_data.username} not found!")
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    
+
     print(f"User {user_data.username} found, checking password...")
     if not verify_password(user_data.password, user.password_hash):
         print(f"Password mismatch for user {user_data.username}")
@@ -40,3 +44,17 @@ def login(user_data: UserLogin, db: Session = Depends(get_db)):
 
     token = create_access_token({"sub": user.username})
     return {"access_token": token, "token_type": "bearer"}
+
+
+@router.delete("/delete-account")
+async def delete_account(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username ==
+                                 current_user["username"]).first()
+    if not user:
+        raise HTTPException(
+            status_code=404, detail="User might be dead already")
+
+    db.delete(user)
+    db.commit()
+
+    return {"message": "You have died successfully"}

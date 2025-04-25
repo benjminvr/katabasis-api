@@ -6,11 +6,16 @@ from src.models.chat import ChatRequest
 
 router = APIRouter()
 
+
 @router.post("/")
 async def chat(request: ChatRequest, user: dict = Depends(get_current_user)):
     """Chat with NPC, linked to authenticated user"""
-    print(f"User {user['username']} chatting with {request.npc_name}: {request.message}")
-    return {"response:": chat_with_npc(user["user_id"], request.npc_name, request.message)}
+    print(
+        f"User {user['username']} chatting with {request.npc_name}: {request.message}")
+    response_text = chat_with_npc(
+        user["user_id"], request.npc_name, request.message)
+    return {"response": response_text}
+
 
 @router.get("/chat_history/{npc_name}")
 async def chat_history(npc_name: str, user: dict = Depends(get_current_user)):
